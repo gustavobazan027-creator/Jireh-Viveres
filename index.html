@@ -17,7 +17,8 @@
                                           .card { background:white; padding:16px; border-radius:14px; margin-bottom:14px; box-shadow:0 2px 9px #00000012; }
                                               h2 { font-size:19px; margin:0 0 14px; }
                                                   label { display:block; font-size:13px; margin:10px 0 5px; font-weight:bold; }
-                                                      input,select,button { width:100%; padding:12px; border-radius:9px; font-size:16px; }
+                                                      [hidden] { display:none !important; }
+ input,select,button { width:100%; padding:12px; border-radius:9px; font-size:16px; }
                                                           input,select { border:1px solid #cbd7cd; background:white; }
                                                               button { border:0; background:var(--green); color:white; font-weight:bold; margin-top:12px; cursor:pointer; }
                                                                   button.gold { background:var(--gold); color:#173b28; }
@@ -45,14 +46,14 @@
                                                                                                                             <h2>📊 Resumen del inventario</h2>
                                                                                                                                 <div class="stats">
                                                                                                                                       <div class="stat"><span>Productos registrados</span><strong id="count">0</strong></div>
-                                                                                                                                            <div class="stat"><span>Unidades en existencia</span><strong id="units">0</strong></div>
+                                                                                                                                            <div class="stat"><span>Unidades en existencia</span><strong id="units">0</strong></div><div class="stat"><span>Inversión en inventario</span><strong id="investment">$0.00</strong></div><div class="stat"><span>Ganancia de ventas</span><strong id="profit">$0.00</strong></div>
                                                                                                                                                 </div>
                                                                                                                                                     <p class="muted">Los datos se guardan en este navegador. Todavía no se sincronizan con otro dispositivo.</p>
                                                                                                                                                       </section>
 
                                                                                                                                                         <section class="card">
-                                                                                                                                                            <h2>➕ Agregar producto</h2>
-                                                                                                                                                                <form id="productForm">
+                                                                                                                                                            <button type="button" id="toggleProduct" aria-expanded="false">➕ Agregar producto nuevo</button>
+                                                                                                                                                                <form id="productForm" hidden>
                                                                                                                                                                       <label for="name">Nombre del producto</label>
                                                                                                                                                                             <input id="name" required placeholder="Ej. Harina PAN">
 
@@ -88,13 +89,19 @@
                                                                                                                                                                                                                                                                                                                                                                               </section>
                                                                                                                                                                                                                                                                                                                                                                               <section class="card">
 <h2>🛒 Nueva venta</h2>
-<label for="saleProduct">Producto</label>
-<select id="saleProduct"></select>
-<label for="saleQty">Cantidad</label>
-<input id="saleQty" type="number" min="1" step="1" value="1">
-<div id="saleTotal" class="muted"></div>
+<label for="saleProduct">Producto</label><select id="saleProduct"></select>
+<label for="saleQty">Cantidad</label><input id="saleQty" type="number" min="0.001" step="any" value="1">
+<button type="button" id="addCart">Agregar al carrito</button>
+<div id="cartItems"></div><p id="saleTotal"></p>
+<h2>💳 Formas de pago</h2>
+<p class="muted">Introduce los importes en la moneda indicada. Puedes combinar varios métodos.</p>
+<label for="cashUSD">Efectivo USD</label><input id="cashUSD" type="number" min="0" step="0.01" value="0">
+<label for="zelleUSD">Zelle USD</label><input id="zelleUSD" type="number" min="0" step="0.01" value="0">
+<label for="pagoVES">Pago Móvil (Bs.)</label><input id="pagoVES" type="number" min="0" step="0.01" value="0">
+<p id="paymentStatus" class="muted"></p>
 <button type="button" id="confirmSale">Confirmar venta</button>
 </section>
+<section class="card"><h2>💾 Respaldo</h2><p class="muted">Descarga una copia antes de actualizar o cambiar de teléfono. No sincroniza dispositivos.</p><button type="button" id="backup">Descargar respaldo JSON</button></section>
 </main>
 
                                                                                                                                                                                                                                                                                                                                                                               <script>
@@ -167,6 +174,7 @@ function render() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 if (!Number.isFinite(qty) || qty <= 0) return notify("Introduce una cantidad válida.");
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   if (direction < 0 && qty > p.stock) return notify("No hay suficiente existencia.");
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     p.stock += direction * qty;
+ if(direction===1){const newCost=prompt("Costo unitario de la última compra en USD (deja vacío para conservarlo):",p.cost);if(newCost!==null && newCost.trim()!=="" && Number.isFinite(Number(newCost)) && Number(newCost)>=0)p.cost=Number(newCost);}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       save();
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         notify("Existencia actualizada.");
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         }
@@ -232,68 +240,37 @@ function render() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-function prepararVentasJireh() {
-  const producto = document.getElementById("saleProduct");
-  const cantidad = document.getElementById("saleQty");
-  const total = document.getElementById("saleTotal");
-  const boton = document.getElementById("confirmSale");
-  if (!producto || !cantidad || !total || !boton) return;
-
-  function actualizarLista() {
-    const anterior = producto.value;
-    producto.replaceChildren();
-    products.forEach(p => {
-      const opcion = document.createElement("option");
-      opcion.value = p.id;
-      opcion.textContent = p.name + " (Disponible: " + p.stock + ")";
-      producto.appendChild(opcion);
-    });
-    if (products.some(p => String(p.id) === anterior)) producto.value = anterior;
-    actualizarTotal();
-  }
-
-  function actualizarTotal() {
-    const p = products.find(x => String(x.id) === producto.value);
-    const qty = Number(cantidad.value);
-    if (!p) { total.textContent = "No hay productos registrados."; return; }
-    if (!Number.isInteger(qty) || qty <= 0) {
-      total.textContent = "Introduce una cantidad válida."; return;
-    }
-    const usd = Number((p.price * qty).toFixed(2));
-    const bs = convertirABolivares(usd);
-    total.textContent = "Total: $" + usd.toFixed(2) +
-      (Number.isFinite(bs) ? " | Bs. " + bs.toLocaleString("es-VE", {minimumFractionDigits:2, maximumFractionDigits:2}) : " | Tasa BCV no disponible");
-  }
-
-  producto.addEventListener("change", actualizarTotal);
-  cantidad.addEventListener("input", actualizarTotal);
-  boton.addEventListener("click", () => {
-    const p = products.find(x => String(x.id) === producto.value);
-    const qty = Number(cantidad.value);
-    if (!p || !Number.isInteger(qty) || qty <= 0 || qty > p.stock) {
-      alert("Revisa la cantidad y la existencia disponible."); return;
-    }
-    const usd = Number((p.price * qty).toFixed(2));
-    if (!confirm("¿Confirmar venta de " + qty + " " + p.name + " por $" + usd.toFixed(2) + "?")) return;
-    p.stock -= qty;
-    save();
-    render();
-    actualizarLista();
-    alert("Venta confirmada. Inventario actualizado.");
-  });
-
-  const observer = new MutationObserver(() => {
-    observer.disconnect();
-    actualizarLista();
-    observer.observe(document.getElementById("products"), {childList:true});
-  });
-  const contenedor = document.getElementById("products");
-  if (contenedor) observer.observe(contenedor, {childList:true});
-  actualizarLista();
+const SALES_KEY = "jireh_sales_v2";
+let sales = [];
+try { sales = JSON.parse(localStorage.getItem(SALES_KEY) || "[]"); if (!Array.isArray(sales)) sales=[]; } catch {}
+const cart = [];
+function rate() { try { const x=JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null"); return Number(x?.tasa)>0 ? Number(x.tasa):null; } catch { return null; } }
+function cartTotal() { return Math.round(cart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100; }
+function cartRender() {
+ const box=el("cartItems"); box.replaceChildren();
+ cart.forEach((item,index)=>{ const line=document.createElement("div");line.className="product";line.textContent=`${item.name} × ${item.qty} = ${money(item.qty*item.price)} `;
+ const remove=document.createElement("button");remove.type="button";remove.textContent="Quitar";remove.onclick=()=>{cart.splice(index,1);cartRender();};line.append(remove);box.append(line); });
+ const total=cartTotal(), r=rate();
+ el("saleTotal").textContent=`Total: ${money(total)}${r ? " · Bs. "+(total*r).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}):" · Tasa no disponible"}`;
+ const cash=Number(el("cashUSD").value)||0,zelle=Number(el("zelleUSD").value)||0,ves=Number(el("pagoVES").value)||0;
+ const paid=cash+zelle+(r?ves/r:0);
+ el("paymentStatus").textContent=ves&&!r ? "No se puede aceptar Pago Móvil sin una tasa disponible." : `Pagado: ${money(paid)} · ${paid+0.005>=total ? "Cubierto" : "Faltan "+money(total-paid)}`;
 }
-prepararVentasJireh();
+function updateSaleProducts(){const select=el("saleProduct"),old=select.value;select.replaceChildren();products.filter(p=>Number(p.stock)>0).forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=`${p.name} (${p.stock} disponibles)`;select.append(o);});select.value=old;}
+el("addCart").onclick=()=>{const p=products.find(p=>String(p.id)===el("saleProduct").value),qty=Number(el("saleQty").value);if(!p||!Number.isFinite(qty)||qty<=0)return notify("Selecciona producto y cantidad válida.");const old=cart.find(x=>x.id===p.id);if(qty+(old?.qty||0)>Number(p.stock)+1e-9)return notify("Existencia insuficiente.");if(old)old.qty+=qty;else cart.push({id:p.id,name:p.name,qty,price:Number(p.price),cost:Number(p.cost)});cartRender();};
+["cashUSD","zelleUSD","pagoVES"].forEach(id=>el(id).addEventListener("input",cartRender));
+el("confirmSale").onclick=()=>{if(!cart.length)return notify("Agrega productos al carrito.");const r=rate(),cash=Number(el("cashUSD").value),zelle=Number(el("zelleUSD").value),ves=Number(el("pagoVES").value);if([cash,zelle,ves].some(v=>!Number.isFinite(v)||v<0))return notify("Revisa los pagos.");if(ves&&!r)return notify("No hay tasa disponible para Pago Móvil.");const total=cartTotal(),paid=cash+zelle+(r?ves/r:0);if(Math.abs(paid-total)>0.015)return notify("Los pagos deben sumar exactamente el total de la venta.");if(cart.some(i=>!products.some(p=>p.id===i.id&&Number(p.stock)+1e-9>=i.qty)))return notify("Revisa las existencias.");if(!confirm(`¿Confirmar venta por ${money(total)}?`))return;
+const record={id:Date.now(),date:new Date().toISOString(),items:cart.map(i=>({...i})),total,profit:Math.round(cart.reduce((s,i)=>s+(i.price-i.cost)*i.qty,0)*100)/100,payments:{cashUSD:cash,zelleUSD:zelle,pagoVES:ves},rate:r};
+cart.forEach(i=>{const p=products.find(p=>p.id===i.id);p.stock=Math.round((Number(p.stock)-i.qty)*1000)/1000;});
+try {localStorage.setItem(KEY,JSON.stringify(products));sales.push(record);localStorage.setItem(SALES_KEY,JSON.stringify(sales));}catch(e){notify("Error al guardar. Comprueba el almacenamiento.");return;}
+cart.length=0;["cashUSD","zelleUSD","pagoVES"].forEach(id=>el(id).value="0");render();notify("Venta guardada correctamente.");};
+el("toggleProduct").onclick=()=>{const form=el("productForm");form.hidden=!form.hidden;el("toggleProduct").setAttribute("aria-expanded",String(!form.hidden));};
+el("backup").onclick=()=>{const blob=new Blob([JSON.stringify({products,sales,rate:JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null")},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="jireh-respaldo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+const originalRender=render;
+render=function(){originalRender();el("investment").textContent=money(products.reduce((s,p)=>s+Number(p.stock||0)*Number(p.cost||0),0));el("profit").textContent=money(sales.reduce((s,x)=>s+Number(x.profit||0),0));updateSaleProducts();cartRender();};
+render();
 
-actualizarTasaBCV();
+actualizarTasaBCV().then(()=>render());
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     </script>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     </body>
