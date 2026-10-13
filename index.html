@@ -98,7 +98,8 @@
 <label for="cashUSD">Efectivo USD</label><input id="cashUSD" type="number" min="0" step="0.01" value="0">
 <label for="zelleUSD">Zelle USD</label><input id="zelleUSD" type="number" min="0" step="0.01" value="0">
 <label for="pagoVES">Pago Móvil (Bs.)</label><input id="pagoVES" type="number" min="0" step="0.01" value="0">
-<p id="paymentStatus" class="muted"></p>
+<p id="paymentStatus" class="muted" aria-live="polite"></p>
+<p id="paymentHint" class="muted" aria-live="polite"></p>
 <button type="button" id="confirmSale">Confirmar venta</button>
 </section>
 <section class="card"><h2>💾 Respaldo</h2><p class="muted">Descarga una copia antes de actualizar o cambiar de teléfono. No sincroniza dispositivos.</p><button type="button" id="backup">Descargar respaldo JSON</button></section>
@@ -246,19 +247,36 @@ try { sales = JSON.parse(localStorage.getItem(SALES_KEY) || "[]"); if (!Array.is
 const cart = [];
 function rate() { try { const x=JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null"); return Number(x?.tasa)>0 ? Number(x.tasa):null; } catch { return null; } }
 function cartTotal() { return Math.round(cart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100; }
-function cartRender() {
- const box=el("cartItems"); box.replaceChildren();
- cart.forEach((item,index)=>{ const line=document.createElement("div");line.className="product";line.textContent=`${item.name} × ${item.qty} = ${money(item.qty*item.price)} `;
- const remove=document.createElement("button");remove.type="button";remove.textContent="Quitar";remove.onclick=()=>{cart.splice(index,1);cartRender();};line.append(remove);box.append(line); });
- const total=cartTotal(), r=rate();
- el("saleTotal").textContent=`Total: ${money(total)}${r ? " · Bs. "+(total*r).toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}):" · Tasa no disponible"}`;
- const cash=Number(el("cashUSD").value)||0,zelle=Number(el("zelleUSD").value)||0,ves=Number(el("pagoVES").value)||0;
- const paid=cash+zelle+(r?ves/r:0);
- el("paymentStatus").textContent=ves&&!r ? "No se puede aceptar Pago Móvil sin una tasa disponible." : `Pagado: ${money(paid)} · ${paid+0.005>=total ? "Cubierto" : "Faltan "+money(total-paid)}`;
-}
+ function vesFormat(n) { return n.toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+ function autoCompletePagoMovil() {
+  const r=rate(), total=cartTotal();
+  if (!r || !Number.isFinite(r) || r<=0) return cartRender();
+  const cash=Math.max(0,Number(el("cashUSD").value)||0);
+  const zelle=Math.max(0,Number(el("zelleUSD").value)||0);
+  const remaining=Math.max(0,Math.round((total-cash-zelle)*100)/100);
+  el("pagoVES").value=(Math.round(remaining*r*100)/100).toFixed(2);
+  cartRender();
+ }
+ function cartRender() {
+  const box=el("cartItems"); box.replaceChildren();
+  cart.forEach((item,index)=>{ const line=document.createElement("div");line.className="product";line.textContent=`${item.name} × ${item.qty} = ${money(item.qty*item.price)} `;
+  const remove=document.createElement("button");remove.type="button";remove.textContent="Quitar";remove.onclick=()=>{cart.splice(index,1);autoCompletePagoMovil();};line.append(remove);box.append(line); });
+  const total=cartTotal(), r=rate();
+  el("saleTotal").textContent=`Total: ${money(total)}${r ? " · Bs. "+vesFormat(total*r):" · Tasa no disponible"}`;
+  const cash=Number(el("cashUSD").value)||0,zelle=Number(el("zelleUSD").value)||0,ves=Number(el("pagoVES").value)||0;
+  const paid=cash+zelle+(r?ves/r:0);
+  const missing=Math.max(0,Math.round((total-paid)*100)/100);
+  const remainingVES=r ? Math.round(missing*r*100)/100 : null;
+  el("paymentStatus").textContent=ves&&!r ? "No se puede aceptar Pago Móvil sin una tasa disponible." : `Pagado: ${money(paid)} · ${paid+0.005>=total ? "Cubierto" : "Faltan "+money(missing)+(r ? " (Bs. "+vesFormat(remainingVES)+")" : "")}`;
+  const hint=el("paymentHint");
+  if (!r) hint.textContent="Tasa BCV no disponible. No se puede calcular el equivalente en bolívares.";
+  else if (paid>total+0.015) hint.textContent=`Pago excedente: ${money(paid-total)}. Ajusta los importes antes de confirmar.`;
+  else hint.textContent=`Tasa guardada: Bs. ${vesFormat(r)} por USD. El Pago Móvil se completa automáticamente al cambiar efectivo o Zelle; puedes editarlo.`;
+ }
 function updateSaleProducts(){const select=el("saleProduct"),old=select.value;select.replaceChildren();products.filter(p=>Number(p.stock)>0).forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=`${p.name} (${p.stock} disponibles)`;select.append(o);});select.value=old;}
-el("addCart").onclick=()=>{const p=products.find(p=>String(p.id)===el("saleProduct").value),qty=Number(el("saleQty").value);if(!p||!Number.isFinite(qty)||qty<=0)return notify("Selecciona producto y cantidad válida.");const old=cart.find(x=>x.id===p.id);if(qty+(old?.qty||0)>Number(p.stock)+1e-9)return notify("Existencia insuficiente.");if(old)old.qty+=qty;else cart.push({id:p.id,name:p.name,qty,price:Number(p.price),cost:Number(p.cost)});cartRender();};
-["cashUSD","zelleUSD","pagoVES"].forEach(id=>el(id).addEventListener("input",cartRender));
+el("addCart").onclick=()=>{const p=products.find(p=>String(p.id)===el("saleProduct").value),qty=Number(el("saleQty").value);if(!p||!Number.isFinite(qty)||qty<=0)return notify("Selecciona producto y cantidad válida.");const old=cart.find(x=>x.id===p.id);if(qty+(old?.qty||0)>Number(p.stock)+1e-9)return notify("Existencia insuficiente.");if(old)old.qty+=qty;else cart.push({id:p.id,name:p.name,qty,price:Number(p.price),cost:Number(p.cost)});autoCompletePagoMovil();};
+["cashUSD","zelleUSD"].forEach(id=>el(id).addEventListener("input",autoCompletePagoMovil));
+el("pagoVES").addEventListener("input",cartRender);
 el("confirmSale").onclick=()=>{if(!cart.length)return notify("Agrega productos al carrito.");const r=rate(),cash=Number(el("cashUSD").value),zelle=Number(el("zelleUSD").value),ves=Number(el("pagoVES").value);if([cash,zelle,ves].some(v=>!Number.isFinite(v)||v<0))return notify("Revisa los pagos.");if(ves&&!r)return notify("No hay tasa disponible para Pago Móvil.");const total=cartTotal(),paid=cash+zelle+(r?ves/r:0);if(Math.abs(paid-total)>0.015)return notify("Los pagos deben sumar exactamente el total de la venta.");if(cart.some(i=>!products.some(p=>p.id===i.id&&Number(p.stock)+1e-9>=i.qty)))return notify("Revisa las existencias.");if(!confirm(`¿Confirmar venta por ${money(total)}?`))return;
 const record={id:Date.now(),date:new Date().toISOString(),items:cart.map(i=>({...i})),total,profit:Math.round(cart.reduce((s,i)=>s+(i.price-i.cost)*i.qty,0)*100)/100,payments:{cashUSD:cash,zelleUSD:zelle,pagoVES:ves},rate:r};
 cart.forEach(i=>{const p=products.find(p=>p.id===i.id);p.stock=Math.round((Number(p.stock)-i.qty)*1000)/1000;});
