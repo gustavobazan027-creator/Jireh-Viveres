@@ -1,0 +1,13 @@
+
+{
+  "name": "JIREH - Víveres y Más",
+    "short_name": "JIREH",
+      "description": "Inventario y ventas de JIREH",
+        "start_url": "./",
+          "scope": "./",
+            "display": "standalone",
+              "background_color": "#fffaf0",
+                "theme_color": "#06482d",
+                  "lang": "es"
+                  }
+                  
