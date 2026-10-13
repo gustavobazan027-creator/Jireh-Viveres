@@ -31,16 +31,38 @@
                                                                                               .muted { color:#647469; font-size:13px; }
                                                                                                   .actions { display:flex; gap:8px; }
                                                                                                       .actions button { flex:1; font-size:13px; }
-                                                                                                          #message { padding:10px; border-radius:8px; background:#edf5ee; margin-bottom:12px; display:none; }
+                                                                                                          #message { position:fixed;top:12px;left:5%;width:90%;z-index:99;box-shadow:0 3px 12px #0002; padding:10px; border-radius:8px; background:#edf5ee; margin-bottom:12px; display:none; }
                                                                                                               @media(max-width:380px) { .grid { grid-template-columns:1fr; } }
-                                                                                                                </style>
+                                                                                                                
+/* JIREH interfaz organizada */
+.nav-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-width:760px;margin:12px auto 0;padding:0 12px}
+.nav-tabs button{margin:0;padding:12px 3px;font-size:12px;background:#e8f0e9;color:#06482d;border-radius:11px}
+.nav-tabs button.active{background:#06482d;color:#fff}
+.tab-panel[hidden]{display:none!important}
+.product{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+.product-info{min-width:0;flex:1}.product-info strong{display:block;font-size:15px}.product-info p{margin:5px 0;line-height:1.5}
+.product .actions{display:flex;flex-direction:column;min-width:95px;gap:4px}
+.product .actions button{margin:0;padding:9px 8px;font-size:12px}
+.small-button{width:auto;padding:10px 14px}
+.panel-note{font-size:13px;color:#607366;line-height:1.5}
+.report-row{border-bottom:1px solid #e5eae5;padding:11px 0}
+.report-row strong{display:block}.report-row small{color:#647469}
+.edit-panel{background:#f2f8f3;padding:14px;border-radius:12px;margin:12px 0}
+@media(max-width:390px){.nav-tabs button{font-size:11px}.product .actions{min-width:83px}}
+</style>
                                                                                                                 </head>
                                                                                                                 <body>
                                                                                                                 <header>
                                                                                                                   <h1>JIREH</h1>
                                                                                                                     <p>VÍVERES Y MÁS · Dios proveerá</p>
                                                                                                                     </header>
-                                                                                                                    <main>
+                                                                                                                    <nav class="nav-tabs" aria-label="Secciones de JIREH">
+<button type="button" class="active" data-tab="inicio">🏠 Inicio</button>
+<button type="button" data-tab="ventas">🛒 Ventas</button>
+<button type="button" data-tab="inventario">📦 Inventario</button>
+<button type="button" data-tab="reportes">📊 Reportes</button>
+</nav>
+<main><div id="tab-inicio" class="tab-panel">
                                                                                                                       <div id="message" role="status"></div>
                                                                                                                         <section class="card">
                                                                                                                             <h2>📊 Resumen del inventario</h2>
@@ -51,7 +73,8 @@
                                                                                                                                                     <p class="muted">Los datos se guardan en este navegador. Todavía no se sincronizan con otro dispositivo.</p>
                                                                                                                                                       </section>
 
-                                                                                                                                                        <section class="card">
+                                                                                                                                                        <section class="card"><h2>Bienvenido a JIREH</h2><p class="panel-note">Registra ventas, consulta existencias y revisa reportes desde las pestañas. Cada venta confirmada descuenta automáticamente el inventario.</p><button type="button" id="goSale">🛒 Nueva venta</button></section></div><div id="tab-inventario" class="tab-panel" hidden>
+<section class="card">
                                                                                                                                                             <button type="button" id="toggleProduct" aria-expanded="false">➕ Agregar producto nuevo</button>
                                                                                                                                                                 <form id="productForm" hidden>
                                                                                                                                                                       <label for="name">Nombre del producto</label>
@@ -87,7 +110,15 @@
                                                                                                                                                                                                                                                                                                                                                                         <input id="search" placeholder="Escribe un nombre...">
                                                                                                                                                                                                                                                                                                                                                                             <div id="products"></div>
                                                                                                                                                                                                                                                                                                                                                                               </section>
-                                                                                                                                                                                                                                                                                                                                                                              <section class="card">
+                                                                                                                                                                                                                                                                                                                                                            <section class="card" id="editCard" hidden><h2 id="editHeading">Editar producto</h2>
+<form id="editForm"><input type="hidden" id="editId">
+<label for="editName">Nombre del producto</label><input id="editName" required>
+<div class="grid"><div><label for="editCost">Costo unitario (USD)</label><input id="editCost" type="number" min="0" step="0.0001" required></div>
+<div><label for="editPrice">Precio de venta (USD)</label><input id="editPrice" type="number" min="0" step="0.0001" required></div></div>
+<div id="replenishFields" hidden><label for="replenishQty">Cantidad nueva que llegó</label><input id="replenishQty" type="number" min="0.001" step="0.001" value="1"></div>
+<button type="submit" id="editSubmit">Guardar cambios</button><button type="button" id="cancelEdit" class="gold">Cancelar</button>
+</form></section>
+</div><div id="tab-ventas" class="tab-panel" hidden><section class="card">
 <h2>🛒 Nueva venta</h2>
 <label for="saleProduct">Producto</label><select id="saleProduct"></select>
 <label for="saleQty">Cantidad</label><input id="saleQty" type="number" min="0.001" step="any" value="1">
@@ -102,8 +133,10 @@
 <p id="paymentHint" class="muted" aria-live="polite"></p>
 <button type="button" id="confirmSale">Confirmar venta</button>
 </section>
+</div><div id="tab-reportes" class="tab-panel" hidden>
+<section class="card"><h2>📊 Reporte de ventas</h2><div class="stats"><div class="stat"><span>Ventas registradas</span><strong id="reportCount">0</strong></div><div class="stat"><span>Total vendido</span><strong id="reportTotal">$0.00</strong></div><div class="stat"><span>Ganancia registrada</span><strong id="reportProfit">$0.00</strong></div></div><h2 style="margin-top:20px">Últimas ventas</h2><div id="reportList"></div></section>
 <section class="card"><h2>💾 Respaldo</h2><p class="muted">Descarga una copia antes de actualizar o cambiar de teléfono. No sincroniza dispositivos.</p><button type="button" id="backup">Descargar respaldo JSON</button></section>
-</main>
+</div></main>
 
                                                                                                                                                                                                                                                                                                                                                                               <script>
                                                                                                                                                                                                                                                                                                                                                                               const KEY = "jireh_inventory_v1";
@@ -146,40 +179,20 @@ function render() {
                                                                                                                                                                                                                                                                                                                                                                                                                     return;
                                                                                                                                                                                                                                                                                                                                                                                                                       }
                                                                                                                                                                                                                                                                                                                                                                                                                         filtered.forEach(p => {
-                                                                                                                                                                                                                                                                                                                                                                                                                            const item = document.createElement("div");
-                                                                                                                                                                                                                                                                                                                                                                                                                                item.className = "product";
-                                                                                                                                                                                                                                                                                                                                                                                                                                    const title = document.createElement("strong");
-                                                                                                                                                                                                                                                                                                                                                                                                                                        title.textContent = p.name;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            const details = document.createElement("p");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                details.className = "muted";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    details.textContent = `${p.category} · ${p.stock} ${p.unit} · Costo: ${money(p.cost)} · Venta: ${money(p.price)} · Bs. ${convertirABolivares(p.price)?.toLocaleString("es-VE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? "Tasa no disponible"}`;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        const actions = document.createElement("div");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            actions.className = "actions";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                const add = document.createElement("button");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    add.textContent = "+ Entrada";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        add.onclick = () => adjust(p.id, 1);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const remove = document.createElement("button");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                remove.className = "gold";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    remove.textContent = "− Salida";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        remove.onclick = () => adjust(p.id, -1);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            actions.append(add, remove);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                item.append(title, details, actions);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    el("products").append(item);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      });
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      function adjust(id, direction) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        const p = products.find(x => x.id === id);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          const value = prompt(direction === 1 ? "Cantidad que ingresó:" : "Cantidad que salió:");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (value === null) return;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              const qty = Number(value);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (!Number.isFinite(qty) || qty <= 0) return notify("Introduce una cantidad válida.");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  if (direction < 0 && qty > p.stock) return notify("No hay suficiente existencia.");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    p.stock += direction * qty;
- if(direction===1){const newCost=prompt("Costo unitario de la última compra en USD (deja vacío para conservarlo):",p.cost);if(newCost!==null && newCost.trim()!=="" && Number.isFinite(Number(newCost)) && Number(newCost)>=0)p.cost=Number(newCost);}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      save();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        notify("Existencia actualizada.");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        el("productForm").addEventListener("submit", event => {
+  const item=document.createElement("div");item.className="product";
+  const info=document.createElement("div");info.className="product-info";
+  const title=document.createElement("strong");title.textContent=p.name;
+  const details=document.createElement("p");details.className="muted";
+  const ves=convertirABolivares(p.price);
+  details.textContent=`${p.stock} ${p.unit} disponibles · Venta: ${money(p.price)}${ves===null?'':' · Bs. '+vesFormat(ves)} · Costo: ${money(p.cost)}`;
+  info.append(title,details);
+  const actions=document.createElement("div");actions.className="actions";
+  const edit=document.createElement("button");edit.type="button";edit.textContent="✏️ Editar";edit.onclick=()=>openProductEditor(p.id,false);
+  const restock=document.createElement("button");restock.type="button";restock.className="gold";restock.textContent="📦 Reponer";restock.onclick=()=>openProductEditor(p.id,true);
+  actions.append(edit,restock);item.append(info,actions);el("products").append(item);
+ });
+}
+                        el("productForm").addEventListener("submit", event => {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           event.preventDefault();
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             const name = el("name").value.trim();
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               const stock = Number(el("stock").value);
@@ -284,8 +297,52 @@ try {localStorage.setItem(KEY,JSON.stringify(products));sales.push(record);local
 cart.length=0;["cashUSD","zelleUSD","pagoVES"].forEach(id=>el(id).value="0");render();notify("Venta guardada correctamente.");};
 el("toggleProduct").onclick=()=>{const form=el("productForm");form.hidden=!form.hidden;el("toggleProduct").setAttribute("aria-expanded",String(!form.hidden));};
 el("backup").onclick=()=>{const blob=new Blob([JSON.stringify({products,sales,rate:JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null")},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="jireh-respaldo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+let currentTab="inicio", editMode="edit";
+function showTab(tab){
+ currentTab=tab;
+ document.querySelectorAll(".tab-panel").forEach(panel=>panel.hidden=panel.id!=="tab-"+tab);
+ document.querySelectorAll("[data-tab]").forEach(btn=>{const active=btn.dataset.tab===tab;btn.classList.toggle("active",active);btn.setAttribute("aria-current",active?"page":"false");});
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>showTab(btn.dataset.tab)));
+el("goSale").onclick=()=>showTab("ventas");
+function openProductEditor(id,replenish){
+ const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+ editMode=replenish?"replenish":"edit";
+ el("editId").value=String(p.id);el("editName").value=p.name;el("editCost").value=p.cost;el("editPrice").value=p.price;
+ el("editName").disabled=replenish;el("editPrice").disabled=replenish;
+ el("replenishFields").hidden=!replenish;el("replenishQty").value="1";
+ el("editHeading").textContent=replenish?"📦 Reponer: "+p.name:"✏️ Editar: "+p.name;
+ el("editSubmit").textContent=replenish?"Guardar reposición":"Guardar cambios";
+ el("editCard").hidden=false;el("editCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+el("cancelEdit").onclick=()=>{el("editCard").hidden=true;};
+el("editForm").addEventListener("submit",e=>{
+ e.preventDefault();const p=products.find(x=>String(x.id)===el("editId").value);if(!p)return;
+ const cost=Number(el("editCost").value),price=Number(el("editPrice").value),name=el("editName").value.trim();
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(price)||price<0||!name)return notify("Revisa los datos del producto.");
+ if(editMode==="replenish"){
+  const qty=Number(el("replenishQty").value);
+  if(!Number.isFinite(qty)||qty<=0)return notify("Indica una cantidad mayor que cero.");
+  p.stock=Math.round((Number(p.stock)+qty)*1000)/1000;p.cost=cost;
+ }else{p.name=name;p.cost=cost;p.price=price;}
+ el("editCard").hidden=true;save();notify(editMode==="replenish"?"Mercancía repuesta correctamente.":"Producto actualizado correctamente.");
+});
+function renderReports(){
+ el("reportCount").textContent=sales.length;
+ el("reportTotal").textContent=money(sales.reduce((n,x)=>n+Number(x.total||0),0));
+ el("reportProfit").textContent=money(sales.reduce((n,x)=>n+Number(x.profit||0),0));
+ const list=el("reportList");list.replaceChildren();
+ if(!sales.length){list.textContent="Aún no hay ventas registradas.";return;}
+ sales.slice(-30).reverse().forEach(sale=>{
+  const row=document.createElement("div");row.className="report-row";
+  const title=document.createElement("strong");title.textContent=money(sale.total)+" · "+new Date(sale.date).toLocaleString("es-VE");
+  const details=document.createElement("small");details.textContent=(sale.items||[]).map(i=>i.name+" × "+i.qty).join(", ")+" · Ganancia: "+money(sale.profit);
+  row.append(title,details);list.append(row);
+ });
+}
 const originalRender=render;
-render=function(){originalRender();el("investment").textContent=money(products.reduce((s,p)=>s+Number(p.stock||0)*Number(p.cost||0),0));el("profit").textContent=money(sales.reduce((s,x)=>s+Number(x.profit||0),0));updateSaleProducts();cartRender();};
+render=function(){originalRender();el("investment").textContent=money(products.reduce((s,p)=>s+Number(p.stock||0)*Number(p.cost||0),0));el("profit").textContent=money(sales.reduce((s,x)=>s+Number(x.profit||0),0));updateSaleProducts();cartRender();renderReports();};
 render();
 
 actualizarTasaBCV().then(()=>render());
