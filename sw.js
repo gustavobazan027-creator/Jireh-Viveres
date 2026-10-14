@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "jireh-v1";
+const CACHE_NAME = "jireh-v2";
 const FILES_TO_CACHE = [
   "./",
     "./index.html",
