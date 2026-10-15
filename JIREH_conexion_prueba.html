@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="theme-color" content="#06482d">
+        <title>JIREH — Víveres y Más</title>
+  <link rel="manifest" href="./manifest.json">
+          <style>
+              :root { --green:#06482d; --gold:#d9ad37; --cream:#fffaf0; }
+                  * { box-sizing:border-box; }
+                      body { margin:0; font-family:Arial,sans-serif; background:var(--cream); color:#183c2a; }
+                          header { background:var(--green); color:white; padding:22px 16px; border-bottom:5px solid var(--gold); }
+                              header h1 { margin:0; font-size:28px; }
+                                  header p { margin:6px 0 0; color:#f6df9c; }
+                                      main { max-width:760px; margin:auto; padding:16px; }
+                                          .card { background:white; padding:16px; border-radius:14px; margin-bottom:14px; box-shadow:0 2px 9px #00000012; }
+                                              h2 { font-size:19px; margin:0 0 14px; }
+                                                  label { display:block; font-size:13px; margin:10px 0 5px; font-weight:bold; }
+                                                      [hidden] { display:none !important; }
+ input,select,button { width:100%; padding:12px; border-radius:9px; font-size:16px; }
+                                                          input,select { border:1px solid #cbd7cd; background:white; }
+                                                              button { border:0; background:var(--green); color:white; font-weight:bold; margin-top:12px; cursor:pointer; }
+                                                                  button.gold { background:var(--gold); color:#173b28; }
+                                                                      .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+                                                                          .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+                                                                              .stat { padding:13px; background:#edf5ee; border-radius:10px; }
+                                                                                  .stat span { display:block; font-size:12px; }
+                                                                                      .stat strong { display:block; font-size:20px; margin-top:6px; overflow-wrap:anywhere; }
+                                                                                          .product { border-top:1px solid #e5eae5; padding:12px 0; }
+                                                                                              .muted { color:#647469; font-size:13px; }
+                                                                                                  .actions { display:flex; gap:8px; }
+                                                                                                      .actions button { flex:1; font-size:13px; }
+                                                                                                          #message { position:fixed;top:12px;left:5%;width:90%;z-index:99;box-shadow:0 3px 12px #0002; padding:10px; border-radius:8px; background:#edf5ee; margin-bottom:12px; display:none; }
+                                                                                                              @media(max-width:380px) { .grid { grid-template-columns:1fr; } }
+                                                                                                                
+/* JIREH interfaz organizada */
+.nav-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-width:760px;margin:12px auto 0;padding:0 12px}
+.nav-tabs button{margin:0;padding:12px 3px;font-size:12px;background:#e8f0e9;color:#06482d;border-radius:11px}
+.nav-tabs button.active{background:#06482d;color:#fff}
+.tab-panel[hidden]{display:none!important}
+.product{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+.product-info{min-width:0;flex:1}.product-info strong{display:block;font-size:15px}.product-info p{margin:5px 0;line-height:1.5}
+.product .actions{display:flex;flex-direction:column;min-width:95px;gap:4px}
+.product .actions button{margin:0;padding:9px 8px;font-size:12px}
+.small-button{width:auto;padding:10px 14px}
+.panel-note{font-size:13px;color:#607366;line-height:1.5}
+.report-row{border-bottom:1px solid #e5eae5;padding:11px 0}
+.report-row strong{display:block}.report-row small{color:#647469}
+.edit-panel{background:#f2f8f3;padding:14px;border-radius:12px;margin:12px 0}
+@media(max-width:390px){.nav-tabs button{font-size:11px}.product .actions{min-width:83px}}
+</style>
+                                                                                                                <style>
+#jireh-access{max-width:760px;margin:12px auto;padding:12px;background:#fff;border:1px solid #d9ad37;border-radius:12px}
+#jireh-access .fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#jireh-access input{min-width:0}
+#jireh-access button{margin-top:8px}
+#jireh-access .status{font-size:13px;color:#375a42}
+@media(max-width:520px){#jireh-access .fields{grid-template-columns:1fr}}
+</style>
+</head>
+                                                                                                                <body>
+                                                                                                                <header>
+                                                                                                                  <h1>JIREH</h1>
+                                                                                                                    <p>VÍVERES Y MÁS · Dios proveerá</p>
+                                                                                                                    </header>
+                                                                                                                    <section id="jireh-access" aria-label="Acceso JIREH">
+<strong>🔐 Conexión JIREH con Supabase</strong>
+<p class="status" id="jireh-auth-status">Inicia sesión para consultar los datos de Supabase. Esta es una versión de preparación; no registres ventas reales aquí todavía.</p>
+<div class="fields"><input type="email" id="jireh-email" autocomplete="username" placeholder="Correo electrónico"><input type="password" id="jireh-password" autocomplete="current-password" placeholder="Contraseña"></div>
+<button type="button" id="jireh-login">Iniciar sesión</button><button type="button" id="jireh-logout" hidden>Cerrar sesión</button>
+</section>
+<nav class="nav-tabs" id="jireh-operaciones" hidden aria-label="Secciones de JIREH">
+<button type="button" class="active" data-tab="inicio">🏠 Inicio</button>
+<button type="button" data-tab="ventas">🛒 Ventas</button>
+<button type="button" data-tab="inventario">📦 Inventario</button>
+<button type="button" data-tab="reportes">📊 Reportes</button>
+</nav>
+<main id="jireh-contenido" hidden><div id="tab-inicio" class="tab-panel">
+                                                                                                                      <div id="message" role="status"></div>
+                                                                                                                        <section class="card">
+                                                                                                                            <h2>📊 Resumen del inventario</h2>
+                                                                                                                                <div class="stats">
+                                                                                                                                      <div class="stat"><span>Productos registrados</span><strong id="count">0</strong></div>
+                                                                                                                                            <div class="stat"><span>Unidades en existencia</span><strong id="units">0</strong></div><div class="stat"><span>Inversión en inventario</span><strong id="investment">$0.00</strong></div><div class="stat"><span>Ganancia de ventas</span><strong id="profit">$0.00</strong></div>
+                                                                                                                                                </div>
+                                                                                                                                                    <p class="muted">Los datos se guardan en este navegador. Todavía no se sincronizan con otro dispositivo.</p>
+                                                                                                                                                      </section>
+
+                                                                                                                                                        <section class="card"><h2>Bienvenido a JIREH</h2><p class="panel-note">Registra ventas, consulta existencias y revisa reportes desde las pestañas. Cada venta confirmada descuenta automáticamente el inventario.</p><button type="button" id="goSale">🛒 Nueva venta</button></section></div><div id="tab-inventario" class="tab-panel" hidden>
+<section class="card">
+                                                                                                                                                            <button type="button" id="toggleProduct" aria-expanded="false">➕ Agregar producto nuevo</button>
+                                                                                                                                                                <form id="productForm" hidden>
+                                                                                                                                                                      <label for="name">Nombre del producto</label>
+                                                                                                                                                                            <input id="name" required placeholder="Ej. Harina PAN">
+
+                                                                                                                                                                                  <div class="grid">
+                                                                                                                                                                                          <div><label for="category">Categoría</label>
+                                                                                                                                                                                                    <select id="category">
+                                                                                                                                                                                                                <option>Harinas</option><option>Arroz y granos</option>
+                                                                                                                                                                                                                            <option>Pasta</option><option>Azúcar</option>
+                                                                                                                                                                                                                                        <option>Huevos y queso</option><option>Aceites</option>
+                                                                                                                                                                                                                                                    <option>Limpieza</option><option>Hogar</option><option>Otros</option>
+                                                                                                                                                                                                                                                              </select>
+                                                                                                                                                                                                                                                                      </div>
+                                                                                                                                                                                                                                                                              <div><label for="unit">Unidad</label>
+                                                                                                                                                                                                                                                                                        <select id="unit"><option>unidad</option><option>kg</option><option>paquete</option><option>litro</option><option>docena</option></select>
+                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                      </div>
+
+                                                                                                                                                                                                                                                                                                            <div class="grid">
+                                                                                                                                                                                                                                                                                                                    <div><label for="stock">Existencia inicial</label><input id="stock" type="number" min="0" step="0.001" value="0" required></div>
+                                                                                                                                                                                                                                                                                                                            <div><label for="cost">Costo última compra (USD)</label><input id="cost" type="number" min="0" step="0.0001" value="0" required></div>
+                                                                                                                                                                                                                                                                                                                                  </div>
+                                                                                                                                                                                                                                                                                                                                        <label for="price">Precio de venta (USD)</label>
+                                                                                                                                                                                                                                                                                                                                              <input id="price" type="number" min="0" step="0.0001" value="0" required>
+                                                                                                                                                                                                                                                                                                                                                    <button type="submit">Guardar producto</button>
+                                                                                                                                                                                                                                                                                                                                                        </form>
+                                                                                                                                                                                                                                                                                                                                                          </section>
+
+                                                                                                                                                                                                                                                                                                                                                            <section class="card">
+                                                                                                                                                                                                                                                                                                                                                                <h2>📦 Productos</h2>
+                                                                                                                                                                                                                                                                                                                                                                    <label for="search">Buscar producto</label>
+                                                                                                                                                                                                                                                                                                                                                                        <input id="search" placeholder="Escribe un nombre...">
+                                                                                                                                                                                                                                                                                                                                                                            <div id="products"></div>
+                                                                                                                                                                                                                                                                                                                                                                              </section>
+                                                                                                                                                                                                                                                                                                                                                            <section class="card" id="editCard" hidden><h2 id="editHeading">Editar producto</h2>
+<form id="editForm"><input type="hidden" id="editId">
+<label for="editName">Nombre del producto</label><input id="editName" required>
+<div class="grid"><div><label for="editCost">Costo unitario (USD)</label><input id="editCost" type="number" min="0" step="0.0001" required></div>
+<div><label for="editPrice">Precio de venta (USD)</label><input id="editPrice" type="number" min="0" step="0.0001" required></div></div>
+<div id="replenishFields" hidden><label for="replenishQty">Cantidad nueva que llegó</label><input id="replenishQty" type="number" min="0.001" step="0.001" value="1"></div>
+<button type="submit" id="editSubmit">Guardar cambios</button><button type="button" id="cancelEdit" class="gold">Cancelar</button>
+</form></section>
+</div><div id="tab-ventas" class="tab-panel" hidden><section class="card">
+<h2>🛒 Nueva venta</h2>
+<label for="saleProduct">Producto</label><select id="saleProduct"></select>
+<label for="saleQty">Cantidad</label><input id="saleQty" type="number" min="0.001" step="any" value="1">
+<button type="button" id="addCart">Agregar al carrito</button>
+<div id="cartItems"></div><p id="saleTotal"></p>
+<h2>💳 Formas de pago</h2>
+<p class="muted">Introduce los importes en la moneda indicada. Puedes combinar varios métodos.</p>
+<label for="cashUSD">Efectivo USD</label><input id="cashUSD" type="number" min="0" step="0.01" value="0">
+<label for="zelleUSD">Zelle USD</label><input id="zelleUSD" type="number" min="0" step="0.01" value="0">
+<label for="pagoVES">Pago Móvil (Bs.)</label><input id="pagoVES" type="number" min="0" step="0.01" value="0">
+<p id="paymentStatus" class="muted" aria-live="polite"></p>
+<p id="paymentHint" class="muted" aria-live="polite"></p>
+<button type="button" id="confirmSale">Confirmar venta</button>
+</section>
+</div><div id="tab-reportes" class="tab-panel" hidden>
+<section class="card"><h2>📊 Reporte de ventas</h2><div class="stats"><div class="stat"><span>Ventas registradas</span><strong id="reportCount">0</strong></div><div class="stat"><span>Total vendido</span><strong id="reportTotal">$0.00</strong></div><div class="stat"><span>Ganancia registrada</span><strong id="reportProfit">$0.00</strong></div></div><h2 style="margin-top:20px">Últimas ventas</h2><div id="reportList"></div></section>
+<section class="card"><h2>💾 Respaldo</h2><p class="muted">Descarga una copia antes de actualizar o cambiar de teléfono. No sincroniza dispositivos.</p><button type="button" id="backup">Descargar respaldo JSON</button></section>
+</div></main>
+
+                                                                                                                                                                                                                                                                                                                                                                              <script>
+                                                                                                                                                                                                                                                                                                                                                                              const KEY = "jireh_inventory_v1";
+                                                                                                                                                                                                                                                                                                                                                                              let products = [];
+                                                                                                                                                                                                                                                                                                                                                                              try { products = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch {}
+
+                                                                                                                                                                                                                                                                                                                                                                              const money = n => "$" + Number(n || 0).toFixed(2);
+                                                                                                                                                                                                                                                                                                                                                                              const el = id => document.getElementById(id);
+
+                                                                                                                                                                                                                                                                                                                                                                              function notify(text) {
+                                                                                                                                                                                                                                                                                                                                                                                el("message").textContent = text;
+                                                                                                                                                                                                                                                                                                                                                                                  el("message").style.display = "block";
+                                                                                                                                                                                                                                                                                                                                                                                    setTimeout(() => el("message").style.display = "none", 3000);
+                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                    function save() {
+                                                                                                                                                                                                                                                                                                                                                                                      try {
+                                                                                                                                                                                                                                                                                                                                                                                          localStorage.setItem(KEY, JSON.stringify(products));
+                                                                                                                                                                                                                                                                                                                                                                                              render();
+                                                                                                                                                                                                                                                                                                                                                                                                } catch { notify("No se pudieron guardar los datos en este navegador."); }
+                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                function convertirABolivares(precioUSD) {
+  try {
+    const registro = JSON.parse(localStorage.getItem("jireh_tasa_bcv") || "null");
+    const tasa = Number(registro?.tasa);
+    if (!Number.isFinite(tasa) || tasa <= 0) return null;
+    return Number(precioUSD) * tasa;
+  } catch (error) {
+    return null;
+  }
+}
+
+function render() {
+                                                                                                                                                                                                                                                                                                                                                                                                  el("count").textContent = products.length;
+                                                                                                                                                                                                                                                                                                                                                                                                    el("units").textContent = products.reduce((s,p) => s + p.stock, 0).toLocaleString("es-VE");
+                                                                                                                                                                                                                                                                                                                                                                                                      const query = el("search").value.trim().toLowerCase();
+                                                                                                                                                                                                                                                                                                                                                                                                        const filtered = products.filter(p => p.name.toLowerCase().includes(query));
+                                                                                                                                                                                                                                                                                                                                                                                                          el("products").innerHTML = "";
+                                                                                                                                                                                                                                                                                                                                                                                                            if (!filtered.length) {
+                                                                                                                                                                                                                                                                                                                                                                                                                el("products").textContent = "Todavía no hay productos. Agrega el primero arriba.";
+                                                                                                                                                                                                                                                                                                                                                                                                                    return;
+                                                                                                                                                                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                                                                                                                                                        filtered.forEach(p => {
+  const item=document.createElement("div");item.className="product";
+  const info=document.createElement("div");info.className="product-info";
+  const title=document.createElement("strong");title.textContent=p.name;
+  const details=document.createElement("p");details.className="muted";
+  const ves=convertirABolivares(p.price);
+  details.textContent=`${p.stock} ${p.unit} disponibles · Venta: ${money(p.price)}${ves===null?'':' · Bs. '+vesFormat(ves)} · Costo: ${money(p.cost)}`;
+  info.append(title,details);
+  const actions=document.createElement("div");actions.className="actions";
+  const edit=document.createElement("button");edit.type="button";edit.textContent="✏️ Editar";edit.onclick=()=>openProductEditor(p.id,false);
+  const restock=document.createElement("button");restock.type="button";restock.className="gold";restock.textContent="📦 Reponer";restock.onclick=()=>openProductEditor(p.id,true);
+  actions.append(edit,restock);item.append(info,actions);el("products").append(item);
+ });
+}
+                        el("productForm").addEventListener("submit", event => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          event.preventDefault();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const name = el("name").value.trim();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              const stock = Number(el("stock").value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const cost = Number(el("cost").value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  const price = Number(el("price").value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (!name || ![stock,cost,price].every(Number.isFinite) || stock < 0 || cost < 0 || price < 0) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return notify("Revisa los datos introducidos.");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            products.push({
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    name, category:el("category").value, unit:el("unit").value, stock, cost, price
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        save();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          event.target.reset();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            el("stock").value = "0";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              el("cost").value = "0";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                el("price").value = "0";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  notify("Producto guardado en este dispositivo.");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  el("search").addEventListener("input", render);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  render();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    async function actualizarTasaBCV() {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      const clave = "jireh_tasa_bcv";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        try {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const respuesta = await fetch(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  "https://bcv.today/api/v1/rate.json",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        { cache: "no-cache" }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (!respuesta.ok) throw new Error("No se pudo consultar la tasa");
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const datos = await respuesta.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        const tasa = Number(datos.USD);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (!Number.isFinite(tasa) || tasa <= 0) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  throw new Error("Tasa no válida");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          const registro = {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                tasa: tasa,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      fecha: datos.effective_date || datos.date || "",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            consultada: new Date().toISOString()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    localStorage.setItem(clave, JSON.stringify(registro));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        console.log("Tasa consultada:", registro);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return registro;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              } catch (error) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  const guardada = localStorage.getItem(clave);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      if (guardada) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            console.warn("Sin conexión: usando la última tasa guardada.");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  return JSON.parse(guardada);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          console.error("No se pudo obtener la tasa BCV:", error);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              return null;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+const SALES_KEY = "jireh_sales_v2";
+let sales = [];
+try { sales = JSON.parse(localStorage.getItem(SALES_KEY) || "[]"); if (!Array.isArray(sales)) sales=[]; } catch {}
+const cart = [];
+function rate() { try { const x=JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null"); return Number(x?.tasa)>0 ? Number(x.tasa):null; } catch { return null; } }
+function cartTotal() { return Math.round(cart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100; }
+ function vesFormat(n) { return n.toLocaleString("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+ function autoCompletePagoMovil() {
+  const r=rate(), total=cartTotal();
+  if (!r || !Number.isFinite(r) || r<=0) return cartRender();
+  const cash=Math.max(0,Number(el("cashUSD").value)||0);
+  const zelle=Math.max(0,Number(el("zelleUSD").value)||0);
+  const remaining=Math.max(0,Math.round((total-cash-zelle)*100)/100);
+  el("pagoVES").value=(Math.round(remaining*r*100)/100).toFixed(2);
+  cartRender();
+ }
+ function cartRender() {
+  const box=el("cartItems"); box.replaceChildren();
+  cart.forEach((item,index)=>{ const line=document.createElement("div");line.className="product";line.textContent=`${item.name} × ${item.qty} = ${money(item.qty*item.price)} `;
+  const remove=document.createElement("button");remove.type="button";remove.textContent="Quitar";remove.onclick=()=>{cart.splice(index,1);autoCompletePagoMovil();};line.append(remove);box.append(line); });
+  const total=cartTotal(), r=rate();
+  el("saleTotal").textContent=`Total: ${money(total)}${r ? " · Bs. "+vesFormat(total*r):" · Tasa no disponible"}`;
+  const cash=Number(el("cashUSD").value)||0,zelle=Number(el("zelleUSD").value)||0,ves=Number(el("pagoVES").value)||0;
+  const paid=cash+zelle+(r?ves/r:0);
+  const missing=Math.max(0,Math.round((total-paid)*100)/100);
+  const remainingVES=r ? Math.round(missing*r*100)/100 : null;
+  el("paymentStatus").textContent=ves&&!r ? "No se puede aceptar Pago Móvil sin una tasa disponible." : `Pagado: ${money(paid)} · ${paid+0.005>=total ? "Cubierto" : "Faltan "+money(missing)+(r ? " (Bs. "+vesFormat(remainingVES)+")" : "")}`;
+  const hint=el("paymentHint");
+  if (!r) hint.textContent="Tasa BCV no disponible. No se puede calcular el equivalente en bolívares.";
+  else if (paid>total+0.015) hint.textContent=`Pago excedente: ${money(paid-total)}. Ajusta los importes antes de confirmar.`;
+  else hint.textContent=`Tasa guardada: Bs. ${vesFormat(r)} por USD. El Pago Móvil se completa automáticamente al cambiar efectivo o Zelle; puedes editarlo.`;
+ }
+function updateSaleProducts(){const select=el("saleProduct"),old=select.value;select.replaceChildren();products.filter(p=>Number(p.stock)>0).forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=`${p.name} (${p.stock} disponibles)`;select.append(o);});select.value=old;}
+el("addCart").onclick=()=>{const p=products.find(p=>String(p.id)===el("saleProduct").value),qty=Number(el("saleQty").value);if(!p||!Number.isFinite(qty)||qty<=0)return notify("Selecciona producto y cantidad válida.");const old=cart.find(x=>x.id===p.id);if(qty+(old?.qty||0)>Number(p.stock)+1e-9)return notify("Existencia insuficiente.");if(old)old.qty+=qty;else cart.push({id:p.id,name:p.name,qty,price:Number(p.price),cost:Number(p.cost)});autoCompletePagoMovil();};
+["cashUSD","zelleUSD"].forEach(id=>el(id).addEventListener("input",autoCompletePagoMovil));
+el("pagoVES").addEventListener("input",cartRender);
+el("confirmSale").onclick=()=>{if(!cart.length)return notify("Agrega productos al carrito.");const r=rate(),cash=Number(el("cashUSD").value),zelle=Number(el("zelleUSD").value),ves=Number(el("pagoVES").value);if([cash,zelle,ves].some(v=>!Number.isFinite(v)||v<0))return notify("Revisa los pagos.");if(ves&&!r)return notify("No hay tasa disponible para Pago Móvil.");const total=cartTotal(),paid=cash+zelle+(r?ves/r:0);if(Math.abs(paid-total)>0.015)return notify("Los pagos deben sumar exactamente el total de la venta.");if(cart.some(i=>!products.some(p=>p.id===i.id&&Number(p.stock)+1e-9>=i.qty)))return notify("Revisa las existencias.");if(!confirm(`¿Confirmar venta por ${money(total)}?`))return;
+const record={id:Date.now(),date:new Date().toISOString(),items:cart.map(i=>({...i})),total,profit:Math.round(cart.reduce((s,i)=>s+(i.price-i.cost)*i.qty,0)*100)/100,payments:{cashUSD:cash,zelleUSD:zelle,pagoVES:ves},rate:r};
+cart.forEach(i=>{const p=products.find(p=>p.id===i.id);p.stock=Math.round((Number(p.stock)-i.qty)*1000)/1000;});
+try {localStorage.setItem(KEY,JSON.stringify(products));sales.push(record);localStorage.setItem(SALES_KEY,JSON.stringify(sales));}catch(e){notify("Error al guardar. Comprueba el almacenamiento.");return;}
+cart.length=0;["cashUSD","zelleUSD","pagoVES"].forEach(id=>el(id).value="0");render();notify("Venta guardada correctamente.");};
+el("toggleProduct").onclick=()=>{const form=el("productForm");form.hidden=!form.hidden;el("toggleProduct").setAttribute("aria-expanded",String(!form.hidden));};
+el("backup").onclick=()=>{const blob=new Blob([JSON.stringify({products,sales,rate:JSON.parse(localStorage.getItem("jireh_tasa_bcv")||"null")},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="jireh-respaldo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+let currentTab="inicio", editMode="edit";
+function showTab(tab){
+ currentTab=tab;
+ document.querySelectorAll(".tab-panel").forEach(panel=>panel.hidden=panel.id!=="tab-"+tab);
+ document.querySelectorAll("[data-tab]").forEach(btn=>{const active=btn.dataset.tab===tab;btn.classList.toggle("active",active);btn.setAttribute("aria-current",active?"page":"false");});
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>showTab(btn.dataset.tab)));
+el("goSale").onclick=()=>showTab("ventas");
+function openProductEditor(id,replenish){
+ const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+ editMode=replenish?"replenish":"edit";
+ el("editId").value=String(p.id);el("editName").value=p.name;el("editCost").value=p.cost;el("editPrice").value=p.price;
+ el("editName").disabled=replenish;el("editPrice").disabled=replenish;
+ el("replenishFields").hidden=!replenish;el("replenishQty").value="1";
+ el("editHeading").textContent=replenish?"📦 Reponer: "+p.name:"✏️ Editar: "+p.name;
+ el("editSubmit").textContent=replenish?"Guardar reposición":"Guardar cambios";
+ el("editCard").hidden=false;el("editCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+el("cancelEdit").onclick=()=>{el("editCard").hidden=true;};
+el("editForm").addEventListener("submit",e=>{
+ e.preventDefault();const p=products.find(x=>String(x.id)===el("editId").value);if(!p)return;
+ const cost=Number(el("editCost").value),price=Number(el("editPrice").value),name=el("editName").value.trim();
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(price)||price<0||!name)return notify("Revisa los datos del producto.");
+ if(editMode==="replenish"){
+  const qty=Number(el("replenishQty").value);
+  if(!Number.isFinite(qty)||qty<=0)return notify("Indica una cantidad mayor que cero.");
+  p.stock=Math.round((Number(p.stock)+qty)*1000)/1000;p.cost=cost;
+ }else{p.name=name;p.cost=cost;p.price=price;}
+ el("editCard").hidden=true;save();notify(editMode==="replenish"?"Mercancía repuesta correctamente.":"Producto actualizado correctamente.");
+});
+function renderReports(){
+ el("reportCount").textContent=sales.length;
+ el("reportTotal").textContent=money(sales.reduce((n,x)=>n+Number(x.total||0),0));
+ el("reportProfit").textContent=money(sales.reduce((n,x)=>n+Number(x.profit||0),0));
+ const list=el("reportList");list.replaceChildren();
+ if(!sales.length){list.textContent="Aún no hay ventas registradas.";return;}
+ sales.slice(-30).reverse().forEach(sale=>{
+  const row=document.createElement("div");row.className="report-row";
+  const title=document.createElement("strong");title.textContent=money(sale.total)+" · "+new Date(sale.date).toLocaleString("es-VE");
+  const details=document.createElement("small");details.textContent=(sale.items||[]).map(i=>i.name+" × "+i.qty).join(", ")+" · Ganancia: "+money(sale.profit);
+  row.append(title,details);list.append(row);
+ });
+}
+const originalRender=render;
+render=function(){originalRender();el("investment").textContent=money(products.reduce((s,p)=>s+Number(p.stock||0)*Number(p.cost||0),0));el("profit").textContent=money(sales.reduce((s,x)=>s+Number(x.profit||0),0));updateSaleProducts();cartRender();renderReports();};
+render();
+
+actualizarTasaBCV().then(()=>render());
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+   
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// JIREH: fase de conexión segura. No se activan ventas hasta adaptar columnas y RPC.
+const JIREH_SUPABASE_URL = 'https://cxchtxodlevasnswbjii.supabase.co';
+const JIREH_PUBLISHABLE_KEY = 'sb_publishable_YtWmSTNi-QO5LPcUf0zKhA_t9A6u2Vy';
+const JIREH_VIEWER_UID = 'bf231692-e471-431e-a097-3aac87f72cb3';
+const JIREH_ADMIN_UID = '74ef8c50-ecaf-4664-9011-b5a8026d8a0d';
+(function(){
+ const status=document.getElementById('jireh-auth-status');
+ const login=document.getElementById('jireh-login');
+ const logout=document.getElementById('jireh-logout');
+ const email=document.getElementById('jireh-email');
+ const password=document.getElementById('jireh-password');
+ if(!window.supabase){status.textContent='No se cargó Supabase. Comprueba tu conexión a internet.';login.disabled=true;return;}
+ const client=window.supabase.createClient(JIREH_SUPABASE_URL,JIREH_PUBLISHABLE_KEY);
+ async function refresh(){
+  const {data,error}=await client.auth.getUser();
+  const user=error?null:data.user;
+  login.hidden=!!user;logout.hidden=!user;email.hidden=!!user;password.hidden=!!user;
+  if(!user){status.textContent='Inicia sesión con tu cuenta JIREH. No se permiten operaciones locales en esta versión.';return;}
+  const role=user.id===JIREH_ADMIN_UID?'administradora':user.id===JIREH_VIEWER_UID?'solo lectura':'sin acceso asignado';
+  if(role==='sin acceso asignado'){status.textContent='Cuenta autenticada, pero no autorizada para JIREH.';return;}
+  const [p,v]=await Promise.all([client.from('productos').select('*',{count:'exact',head:true}),client.from('ventas').select('*',{count:'exact',head:true})]);
+  if(p.error||v.error){status.textContent='Sesión activa ('+role+'). No fue posible consultar ambas tablas: '+(p.error?.message||v.error?.message);return;}
+  status.textContent='Sesión activa ('+role+'). Supabase responde: '+p.count+' productos y '+v.count+' ventas. Próxima etapa: activar interfaz sincronizada y registro de ventas seguro.';
+ }
+ login.addEventListener('click',async()=>{
+  login.disabled=true;status.textContent='Conectando…';
+  try{const {error}=await client.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(error)throw error;password.value='';await refresh();}
+  catch(e){status.textContent='No se pudo iniciar sesión: '+e.message;}
+  finally{login.disabled=false;}
+ });
+ logout.addEventListener('click',async()=>{await client.auth.signOut();await refresh();});
+ client.auth.onAuthStateChange(()=>{setTimeout(refresh,0);});
+ refresh();
+})();
+</script>
+</body>
+</html>
